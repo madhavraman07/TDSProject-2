@@ -3,6 +3,7 @@ name: Build and Deploy to Cloud Run
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-deploy:
@@ -14,12 +15,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Cloud SDK
+    # Authenticate with GCP using the service account JSON stored in the secret
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    # Optional: set up gcloud CLI (now authenticated from previous step)
+    - name: Set up gcloud CLI
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true
+        version: 'latest'
 
     - name: Build and submit to Cloud Build
       run: |
