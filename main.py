@@ -1,30 +1,47 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
-import os, requests, json
+import os
 
-app = FastAPI()
-EXPECTED_SECRET = os.environ.get("QUIZ_SECRET", "TDS2025_madhav_!37")
-MY_EMAIL = os.environ.get("MY_EMAIL", "24f2002722@ds.study.iitm.ac.in")
+app = FastAPI(
+    title="TDS Project 2 Quiz Endpoint",
+    description="Stable endpoint for receiving quiz tasks",
+    version="1.0"
+)
+
+# Load environment variables
+EXPECTED_SECRET = os.environ.get("QUIZ_SECRET", "")
+MY_EMAIL = os.environ.get("MY_EMAIL", "")
 
 @app.get("/health")
 def health():
-    return {"status":"ok"}
+    return {"status": "ok"}
 
 @app.post("/quiz_hook")
-async def quiz_hook(req: Request):
+async def quiz_hook(request: Request):
+    """
+    This endpoint:
+    - validates secret
+    - echoes required fields back
+    - formats the response cleanly
+    - NEVER fails / NEVER crashes
+    - does NOT attempt solving the quiz (we solve in Colab)
+    """
     try:
-        payload = await req.json()
+        payload = await request.json()
     except:
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
+    # Secret validation
     if payload.get("secret") != EXPECTED_SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
 
-    out = {
+    # Construct safe echo response
+    response_payload = {
         "email": MY_EMAIL,
         "secret": EXPECTED_SECRET,
-        "url": payload.get("url"),
-        "answer": "demo_answer"
+        "received_url": payload.get("url"),
+        "note": "Endpoint OK. Solver runs separately.",
+        "answer": "placeholder"
     }
 
-    return JSONResponse(status_code=200, content={"status":"accepted","result_summary":out})
+    return JSONResponse(status_code=200, content=response_payload)
